@@ -8,5 +8,5 @@
 После завершения приложения таблица будет удалена
 
 
-### Swagger 
+### Документация REST api в Swagger 
 https://v507-net.github.io/PJ-04/
