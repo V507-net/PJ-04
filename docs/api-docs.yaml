@@ -3,9 +3,42 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-- url: http://localhost:8080
+- url: http://127.0.0.1:8080
   description: Generated server url
 paths:
+  /transfer/{idFrom}/{idTo}:
+    put:
+      tags:
+      - banking-controller
+      operationId: transferMoney
+      parameters:
+      - name: idFrom
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: idTo
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: sum
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
   /takeMoney/{id}:
     put:
       tags:
@@ -60,6 +93,41 @@ paths:
                 type: object
                 additionalProperties:
                   type: object
+  /getOperationList:
+    get:
+      tags:
+      - banking-controller
+      operationId: getOperationList
+      parameters:
+      - name: clientId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: startDate
+        in: query
+        description: "Начальная дата (Формат ISO.DATE_TIME: yyyy-MM-dd'T'HH:mm:ss)"
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: endDate
+        in: query
+        description: "Конечная дата (Формат ISO.DATE_TIME: yyyy-MM-dd'T'HH:mm:ss)"
+        required: false
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Operation"
   /getBalance/{id}:
     get:
       tags:
@@ -81,4 +149,36 @@ paths:
                 type: object
                 additionalProperties:
                   type: object
-components: {}
+components:
+  schemas:
+    Operation:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        fromId:
+          type: integer
+          format: int32
+        toId:
+          type: integer
+          format: int32
+        sum:
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - SUCCESS
+          - INSUFFICIENT_FUNDS
+          - CLIENT_NOT_FOUND
+          - UNKNOWN_ERROR
+          - SENDER_NOT_FOUND
+          - NOT_ALLOWED
+          - RECEIVER_NOT_FOUND
+          - TRANSFER
+          - DEPOSIT
+          - WITHDRAW
+        timestamp:
+          type: string
+          format: date-time
