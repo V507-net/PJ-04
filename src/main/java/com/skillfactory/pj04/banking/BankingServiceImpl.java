@@ -1,19 +1,26 @@
 package com.skillfactory.pj04.banking;
 
 import com.skillfactory.pj04.client.Client;
-import com.skillfactory.pj04.database.OperationLog;
 import com.skillfactory.pj04.repository.ClientRepository;
+import com.skillfactory.pj04.repository.OperationRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+
 
 @Service
 public class BankingServiceImpl implements BankingService {
 
-    @Autowired
-    private ClientRepository clientRepository;
+    private final ClientRepository clientRepository;
+    private final OperationRepository operationRepository;
+
+    public BankingServiceImpl(ClientRepository clientRepository, OperationRepository operationRepository)
+    {
+        this.clientRepository = clientRepository;
+        this.operationRepository = operationRepository;
+    }
 
     @Override
     public List<Client>  readAll() {
@@ -40,6 +47,9 @@ public class BankingServiceImpl implements BankingService {
                     if (client.balance - sum >= 0) {
                         client.balance -= sum;
                         clientRepository.save(client);
+
+                        logOperation(client.id, null, sum, TransactionStatus.WITHDRAW);
+
                         return TransactionStatus.SUCCESS;
                     } else {
                         return TransactionStatus.INSUFFICIENT_FUNDS;
@@ -56,25 +66,27 @@ public class BankingServiceImpl implements BankingService {
             if (client.balance + sum >= 0) {
                 client.balance += sum;
                 clientRepository.save(client); // сохраняем
+
+                logOperation(null, client.id, sum, TransactionStatus.DEPOSIT);
+
                 return TransactionStatus.SUCCESS;
             } else {
                 return TransactionStatus.CLIENT_NOT_FOUND;
             }
         }).orElse(TransactionStatus.UNKNOWN_ERROR);
     }
-    @Override
-    public OperationLog getOperationList(int id, String dateStart, String dateEnd) {
-        return null;
-    }
+
 
     @Override
     @Transactional
     public TransactionStatus transferMoney(int idFrom, int idTo, double sum) {
         if (idFrom == idTo) {
-            return TransactionStatus.BAD_ASS;
+            TransactionStatus status = TransactionStatus.NOT_ALLOWED;
+            operationRepository.save(new Operation(idFrom, idTo, sum, status));
+            return status;
         }
 
-        return clientRepository.findByIdForUpdate(idFrom)
+        TransactionStatus result = clientRepository.findByIdForUpdate(idFrom)
                 .map(sender -> {
                     if (sender.balance - sum >= 0) {
                         return clientRepository.findByIdForUpdate(idTo)
@@ -83,6 +95,9 @@ public class BankingServiceImpl implements BankingService {
                                     receiver.balance += sum;
                                     clientRepository.save(sender);
                                     clientRepository.save(receiver);
+
+                                    logOperation(sender.id, receiver.id, sum,TransactionStatus.TRANSFER );
+
                                     return TransactionStatus.SUCCESS;
                                 })
                                 .orElse(TransactionStatus.RECEIVER_NOT_FOUND);
@@ -91,5 +106,24 @@ public class BankingServiceImpl implements BankingService {
                     }
                 })
                 .orElse(TransactionStatus.SENDER_NOT_FOUND);
+
+
+
+        return result;
     }
+
+    public void logOperation(Integer fromId, Integer toId, double sum, TransactionStatus status) {
+        Operation op = new Operation();
+        op.setFromId(fromId);
+        op.setToId(toId);
+        op.setSum(sum);
+        op.setTimestamp(LocalDateTime.now());
+        op.setStatus(status);
+        operationRepository.save(op);
+    }
+
+    public List<Operation> getOperationList(Integer clientId, LocalDateTime startDate, LocalDateTime endDate) {
+        return operationRepository.findByFilters(clientId, startDate, endDate);
+    }
+
 }

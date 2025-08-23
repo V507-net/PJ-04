@@ -1,11 +1,9 @@
 package com.skillfactory.pj04.banking;
 
 import com.skillfactory.pj04.client.Client;
-import com.skillfactory.pj04.database.OperationLog;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 public interface BankingService {
 
@@ -18,9 +16,10 @@ public interface BankingService {
     TransactionStatus  takeMoney (int id, double sum);
     TransactionStatus  putMoney (int id, double sum);
 
-    OperationLog getOperationList(int id, String dateStart, String dateEnd);
+    List<Operation> getOperationList(Integer clientId, LocalDateTime startDate, LocalDateTime endDate);
 
     TransactionStatus transferMoney (int idFrom,int idTo, double sum);
 
+    void logOperation(Integer fromId, Integer toId, double sum, TransactionStatus status);
 
 }

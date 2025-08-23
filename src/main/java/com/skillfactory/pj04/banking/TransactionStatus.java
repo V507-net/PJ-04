@@ -6,6 +6,9 @@ public enum TransactionStatus {
     CLIENT_NOT_FOUND,
     UNKNOWN_ERROR,
     SENDER_NOT_FOUND,
-    BAD_ASS,
-    RECEIVER_NOT_FOUND
+    NOT_ALLOWED,
+    RECEIVER_NOT_FOUND,
+    TRANSFER,
+    DEPOSIT,
+    WITHDRAW
 }
